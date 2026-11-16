@@ -23,7 +23,7 @@ rule all:
         gtf = config["gtf"]
     run:
         print("BAM files:")
-        for bam in in input.bam_files:
+        for bam in input.bam_files:
             print(bam)
         
         print("GTF file:")
