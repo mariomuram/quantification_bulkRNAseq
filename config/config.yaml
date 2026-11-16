@@ -1,0 +1,11 @@
+##################
+# Example config #
+##################
+
+# BAM files from STAR
+bam_files:
+  - sample_1
+  - sample_2
+
+# Transcriptome file for annotation
+gtf: "/CEPH/users/mschilling/projects/gata2_mesenchymal/resources/references/transcriptome/GRCh38.ensembl_v116.sorted.gtf.gz"

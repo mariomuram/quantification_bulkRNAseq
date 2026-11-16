@@ -1,0 +1,31 @@
+#############################
+# Minimum Snakemake version #
+#############################
+
+# Enable setting a minimum Snakemake version supported by the workflow.
+from snakemake.utils import min_version
+min_version("8.0.0")
+
+
+#################
+# Configuration #
+#################
+
+configfile: "config/config.yaml"
+
+#########
+# Rules #
+#########
+
+rule all:
+    input:
+        bam_files = config["bam_files"],
+        gtf = config["gtf"]
+    run:
+        print("BAM files:")
+        for bam in in input.bam_files:
+            print(bam)
+        
+        print("GTF file:")
+        print(input.gtf)
+
