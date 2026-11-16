@@ -18,14 +18,11 @@ configfile: "config/config.yaml"
 #########
 
 rule all:
-    input:
-        bam_files = config["bam_files"],
-        gtf = config["gtf"]
     run:
         print("BAM files:")
-        for bam in input.bam_files:
+        for bam in config["bam_files"]:
             print(bam)
         
         print("GTF file:")
-        print(input.gtf)
+        print(config["gtf"])
 
