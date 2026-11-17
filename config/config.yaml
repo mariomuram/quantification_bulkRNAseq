@@ -5,4 +5,4 @@
 # BAM files are added from STAR
 
 # Transcriptome file for annotation
-gtf: "/CEPH/users/mschilling/projects/gata2_mesenchymal/resources/references/transcriptome/GRCh38.ensembl_v116.sorted.gtf.gz"
+gtf: "path/to/annotation.gtf"
