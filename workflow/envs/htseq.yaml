@@ -3,12 +3,14 @@
 # Channels #
 ############
 
-- conda-forge
-- bioconda
+channels:
+  - conda-forge
+  - bioconda
 
 
 ############
 # Packages #
 ############
 
-- htseq
+dependencies:
+  - htseq
