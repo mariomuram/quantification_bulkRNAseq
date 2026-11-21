@@ -1,0 +1,14 @@
+
+############
+# Channels #
+############
+
+- conda-forge
+- bioconda
+
+
+############
+# Packages #
+############
+
+- htseq

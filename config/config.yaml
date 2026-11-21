@@ -3,6 +3,7 @@
 ##################
 
 # BAM files are added from STAR
+bam:
 
 # Transcriptome file for annotation
 gtf: "path/to/annotation.gtf"

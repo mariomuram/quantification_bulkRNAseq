@@ -13,19 +13,151 @@ min_version("8.0.0")
 
 configfile: "config/config.yaml"
 
+# Extract the BAM IDs to name the output files in the quantification module
+BAM_IDS = {bam.split("/")[-1].split(".")[0]: bam for bam in config["bam_files"]}
+BAM_IDS_LIST = list(BAM_IDS)
+
+
 #########
 # Rules #
 #########
 
 rule all:
     input:
-        bam_files = config["bam_files"],
-        gtf_file = config["gtf"]
-    run:
-        print("BAM files:")
-        for bam in input.bam_files:
-            print(bam)
-        
-        print("GTF file:")
-        print(input.gtf)
+        rules.merge_counts.output
 
+rule quantify:
+    input:
+        bam = lambda wildcards: BAM_IDS[wildcards.sample],
+        gtf = config["gtf"]
+    output: counts = "results/counts/{sample}.counts.txt"
+    threads: 1
+    conda: "envs/htseq.yaml"
+    shell:
+        """
+        htseq-count \
+            --format=bam \
+            --order=pos \
+            --stranded=no \
+            --type=exon \
+            --idattr=gene_id \
+            {input.bam:q} \
+            {input.gtf:q} \
+            > {output.counts:q}
+        """
+
+rule merge_counts:
+    input:
+        counts = expand("results/counts/{sample}.counts.txt", sample=BAM_IDS_LIST)
+    output: 
+        matrix = "results/counts/gene_counts.tsv.gz",
+        summary = "results/counts/htseq_summary.tsv"
+    
+    run:
+        import csv
+        import gzip
+        import os
+
+        counts_by_sample = {}
+        summary_by_sample = {}
+
+        gene_order = None
+
+        # ----------------------------------------------------
+        # 1. Read individual count files and store counts in dictionaries
+        # ----------------------------------------------------
+
+        for file in input.counts:
+
+            sample = os.path.basename(file).replace(
+                ".counts.txt", ""
+            )
+
+            gene_counts = {}
+            sample_summary = {}
+
+            with open(file, "r") as f:
+
+                reader = csv.reader(f, delimiter="\t")
+
+                for row in reader:
+
+                    if not row:
+                        continue
+
+                    gene_id = row[0]
+                    count = int(row[1])
+
+                    # Separate the summary counts
+                    if gene_id.startswith("__"):
+                        sample_summary[gene_id] = count
+
+                    # Keep the gene counts
+                    else:
+                        gene_counts[gene_id] = count
+
+            # Check that all files have the same gene IDs and maintain the order
+            if gene_order is None:
+
+                gene_order = list(gene_counts.keys())
+
+            elif set(gene_counts.keys()) != set(gene_order):
+
+                raise ValueError(
+                    f"Different gene IDs found in {file}"
+                )
+
+            counts_by_sample[sample] = gene_counts
+            summary_by_sample[sample] = sample_summary
+
+        # ----------------------------------------------------
+        # 2. Create the count matrix
+        # ----------------------------------------------------
+
+        with gzip.open(output.matrix, "wt") as out:
+
+            writer = csv.writer(out, delimiter="\t")
+
+            # Cabecera
+            writer.writerow(
+                ["gene_id"] + list(counts_by_sample.keys())
+            )
+
+            # Una fila por gen
+            for gene in gene_order:
+
+                writer.writerow(
+                    [gene] + [
+                        counts_by_sample[sample][gene]
+                        for sample in counts_by_sample
+                    ]
+                )
+
+        # ----------------------------------------------------
+        # 3. Create the HTSeq summary
+        # ----------------------------------------------------
+
+        summary_categories = list(
+            dict.fromkeys(
+                category
+                for sample_summary in summary_by_sample.values()
+                for category in sample_summary
+            )
+        )
+
+        with open(output.summary, "w") as out:
+
+            writer = csv.writer(out, delimiter="\t")
+
+            writer.writerow(
+                ["sample"] + summary_categories
+            )
+
+            for sample, sample_summary in summary_by_sample.items():
+
+                writer.writerow(
+                    [sample] + [
+                        sample_summary.get(category, 0)
+                        for category in summary_categories
+                    ]
+                )
