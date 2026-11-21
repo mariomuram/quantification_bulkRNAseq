@@ -22,10 +22,6 @@ BAM_IDS_LIST = list(BAM_IDS)
 # Rules #
 #########
 
-rule all:
-    input:
-        rules.merge_counts.output
-
 rule quantify:
     input:
         bam = lambda wildcards: BAM_IDS[wildcards.sample],
@@ -161,3 +157,7 @@ rule merge_counts:
                         for category in summary_categories
                     ]
                 )
+rule all:
+    default_target: True
+    input:
+        rules.merge_counts.output
